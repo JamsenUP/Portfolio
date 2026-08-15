@@ -4,11 +4,21 @@ import { useState } from "react";
 import { Mail, Send, CheckCircle2 } from "lucide-react";
 import ScrollReveal from "./ScrollReveal";
 
+const serviceOptions = [
+  "Доработка сайта (от 1 000 ₽)",
+  "Сайт под ключ (от 15 000 ₽)",
+  "Разработка Telegram Mini Apps (от 20 000 ₽)",
+  "AI-ассистент & Бот для бизнеса (от 15 000 ₽)",
+  "Ведение Telegram-канала (15 000 ₽)",
+  "SEO-продвижение & Трафик (от 30 000 ₽)",
+  "Другая индивидуальная задача",
+];
+
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: "",
     contact: "",
-    service: "Лендинг",
+    service: serviceOptions[0],
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -38,8 +48,8 @@ export default function Contact() {
                 Обсудим проект
               </h2>
               <p className="text-[#D4C5B9] text-base leading-relaxed font-inter">
-                Опишите задачу — я свяжусь с вами в течение нескольких часов и предложу
-                оптимальное архитектурное решение.
+                Опишите задачу — я свяжусь с вами в течение нескольких часов, рассчитаю точную
+                стоимость и предложу оптимальный план реализации.
               </p>
 
               <div className="pt-4 flex flex-col gap-4">
@@ -95,7 +105,12 @@ export default function Contact() {
                   <button
                     onClick={() => {
                       setSubmitted(false);
-                      setFormData({ name: "", contact: "", service: "Лендинг", message: "" });
+                      setFormData({
+                        name: "",
+                        contact: "",
+                        service: serviceOptions[0],
+                        message: "",
+                      });
                     }}
                     className="btn-ghost-spatial !py-2.5 !px-6 text-xs font-mono mt-4 uppercase"
                   >
@@ -139,28 +154,16 @@ export default function Contact() {
                       Интересующая Услуга
                     </label>
                     <select
+                      id="service-select"
                       value={formData.service}
                       onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                       className="w-full bg-[#2B221C]/90 border border-[#EADEC9]/30 rounded-xl px-4 py-3 text-[#F8F6F0] focus:outline-none focus:border-[#EADEC9] transition-colors text-sm font-inter"
                     >
-                      <option value="Лендинг" className="bg-[#2B221C] text-[#F8F6F0]">
-                        Лендинг (от 5 дней)
-                      </option>
-                      <option value="Корпоративный сайт" className="bg-[#2B221C] text-[#F8F6F0]">
-                        Корпоративный сайт (от 10 дней)
-                      </option>
-                      <option value="Интернет-магазин" className="bg-[#2B221C] text-[#F8F6F0]">
-                        Интернет-магазин (от 14 дней)
-                      </option>
-                      <option value="SEO-продвижение" className="bg-[#2B221C] text-[#F8F6F0]">
-                        SEO-продвижение (от 30 дней)
-                      </option>
-                      <option value="Контекстная реклама" className="bg-[#2B221C] text-[#F8F6F0]">
-                        Контекстная реклама (от 3 дней)
-                      </option>
-                      <option value="Поддержка и развитие" className="bg-[#2B221C] text-[#F8F6F0]">
-                        Поддержка и развитие
-                      </option>
+                      {serviceOptions.map((opt) => (
+                        <option key={opt} value={opt} className="bg-[#2B221C] text-[#F8F6F0]">
+                          {opt}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -170,7 +173,7 @@ export default function Contact() {
                     </label>
                     <textarea
                       rows={4}
-                      placeholder="Расскажите коротко о вашей задаче, сроках и ожиданиях..."
+                      placeholder="Расскажите коротко о вашей задаче, ссылках на референсы или доступе..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="w-full bg-[#2B221C]/90 border border-[#EADEC9]/30 rounded-xl px-4 py-3 text-[#F8F6F0] placeholder-[#6B594C] focus:outline-none focus:border-[#EADEC9] transition-colors text-sm font-inter resize-none"
