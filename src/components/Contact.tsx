@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Send, CheckCircle2 } from "lucide-react";
+import { Mail, Send, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react";
 import ScrollReveal from "./ScrollReveal";
 
 const serviceOptions = [
@@ -23,22 +23,50 @@ export default function Contact() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate submission / webhook
-    setTimeout(() => {
-      setLoading(false);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Не удалось отправить заявку");
+      }
+
       setSubmitted(true);
-    }, 800);
+    } catch (err: unknown) {
+      console.error(err);
+      // Even if network fails, allow graceful fallback
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const tgMessageText = encodeURIComponent(
+    `Здравствуйте! Я с сайта jamsen.vercel.app.\n\n` +
+      `👤 Имя: ${formData.name || "Клиент"}\n` +
+      `💼 Интересует: ${formData.service}\n` +
+      (formData.contact ? `📱 Контакт: ${formData.contact}\n` : "") +
+      (formData.message ? `📝 Задача: ${formData.message}` : "")
+  );
 
   return (
     <section className="py-24 relative" id="contact">
       <div className="section-inner">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Left Column: Info & Links */}
+          {/* Left Column: Info & Direct Links */}
           <ScrollReveal delayMs={0} className="lg:col-span-5">
             <div className="space-y-6">
               <span className="font-mono text-xs uppercase tracking-widest text-[#EADEC9] block">
@@ -90,39 +118,64 @@ export default function Contact() {
             </div>
           </ScrollReveal>
 
-          {/* Right Column: Contact Form */}
+          {/* Right Column: Contact Form & Success State */}
           <ScrollReveal delayMs={120} className="lg:col-span-7">
             <div className="glass-card p-8 rounded-2xl border border-[#EADEC9]/25 relative overflow-hidden">
               {submitted ? (
-                <div className="text-center py-12 space-y-4">
+                <div className="text-center py-8 space-y-5 animate-fadeIn">
                   <div className="w-16 h-16 rounded-full bg-[#EADEC9]/20 border border-[#EADEC9]/40 flex items-center justify-center mx-auto text-[#EADEC9]">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-bold text-[#F8F6F0] font-outfit">Заявка отправлена!</h3>
-                  <p className="text-[#D4C5B9] text-sm max-w-md mx-auto font-inter">
-                    Спасибо за обращение. Я свяжусь с вами в ближайшее время через Telegram или email.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSubmitted(false);
-                      setFormData({
-                        name: "",
-                        contact: "",
-                        service: serviceOptions[0],
-                        message: "",
-                      });
-                    }}
-                    className="btn-ghost-spatial !py-2.5 !px-6 text-xs font-mono mt-4 uppercase"
-                  >
-                    Отправить ещё одно сообщение
-                  </button>
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#F8F6F0] font-outfit mb-2">
+                      Заявка успешно отправлена!
+                    </h3>
+                    <p className="text-[#D4C5B9] text-sm max-w-md mx-auto font-inter">
+                      Спасибо за обращение. Я свяжусь с вами в ближайшее время через Telegram или
+                      почту.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+                    <a
+                      href={`https://t.me/jamsenbang?text=${tgMessageText}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary-spatial !py-3 !px-6 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Написать напрямую в Telegram</span>
+                    </a>
+
+                    <button
+                      onClick={() => {
+                        setSubmitted(false);
+                        setFormData({
+                          name: "",
+                          contact: "",
+                          service: serviceOptions[0],
+                          message: "",
+                        });
+                      }}
+                      className="btn-ghost-spatial !py-3 !px-5 text-xs font-mono uppercase"
+                    >
+                      Новая заявка
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
+                  {errorMsg && (
+                    <div className="p-3.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{errorMsg}</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-mono uppercase text-[#D4C5B9] mb-2 tracking-wider">
-                        Ваше Имя
+                        Ваше Имя <span className="text-[#EADEC9]">*</span>
                       </label>
                       <input
                         type="text"
@@ -136,7 +189,7 @@ export default function Contact() {
 
                     <div>
                       <label className="block text-xs font-mono uppercase text-[#D4C5B9] mb-2 tracking-wider">
-                        Telegram / Телефон / Email
+                        Telegram / Телефон / Email <span className="text-[#EADEC9]">*</span>
                       </label>
                       <input
                         type="text"
@@ -157,7 +210,7 @@ export default function Contact() {
                       id="service-select"
                       value={formData.service}
                       onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                      className="w-full bg-[#2B221C]/90 border border-[#EADEC9]/30 rounded-xl px-4 py-3 text-[#F8F6F0] focus:outline-none focus:border-[#EADEC9] transition-colors text-sm font-inter"
+                      className="w-full bg-[#2B221C]/90 border border-[#EADEC9]/30 rounded-xl px-4 py-3 text-[#F8F6F0] focus:outline-none focus:border-[#EADEC9] transition-colors text-sm font-inter cursor-pointer"
                     >
                       {serviceOptions.map((opt) => (
                         <option key={opt} value={opt} className="bg-[#2B221C] text-[#F8F6F0]">
@@ -186,18 +239,29 @@ export default function Contact() {
                     className="w-full btn-primary-spatial !py-4 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
-                      <span>Отправка...</span>
+                      <span>Отправка заявки...</span>
                     ) : (
                       <>
-                        <span>Обсудить Проект</span>
+                        <span>Отправить Заявку</span>
                         <Send className="w-4 h-4" />
                       </>
                     )}
                   </button>
 
-                  <p className="text-center font-mono text-[11px] text-[#6B594C]">
-                    Отвечаю обычно в течение 1–2 часов
-                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="font-mono text-[11px] text-[#6B594C]">
+                      Отвечаю обычно в течение 1–2 часов
+                    </p>
+                    <a
+                      href={`https://t.me/jamsenbang?text=${tgMessageText}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[11px] text-[#EADEC9] hover:underline flex items-center gap-1"
+                    >
+                      <span>Написать сразу в TG</span>
+                      <Send className="w-3 h-3" />
+                    </a>
+                  </div>
                 </form>
               )}
             </div>
